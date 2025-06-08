@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: cycle-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:server --preload
+
+  - type: cron
+    name: gen-static-png
+    schedule: "0 */8 * * *"
+    command: |
+      python - <<'EOF'
+      # génère et stocke /graphes/*.png
+      from app import get_data, update_graph
+      # utilitaire pour sauver PNG dans graphes/
+      import os, io
+      os.makedirs('graphes', exist_ok=True)
+      for sym in ['ES','NQ','YM','GOLD','EURUSD']:
+          fig = update_graph(None, sym, '2025-01-01', '2025-06-01', 'line')
+          img = fig.to_image(format='png')
+          open(f'graphes/{sym}.png','wb').write(img)
+      EOF
+    staticPublishPath: graphes
